@@ -1,5 +1,6 @@
 checkpoint/
+checkpoints/
 data/
 checkpoint_/
 *.pyc
-
+debug.log

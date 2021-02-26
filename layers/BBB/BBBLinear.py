@@ -67,7 +67,9 @@ class BBBLinear(ModuleWrapper):
             weight = self.W_mu
             bias = self.bias_mu if self.use_bias else None
 
-        return F.linear(input, weight, bias)
+        out = F.linear(input, weight, bias)
+        # print("linear out",out.detach().numpy().shape)
+        return out
 
     def kl_loss(self):
         kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)

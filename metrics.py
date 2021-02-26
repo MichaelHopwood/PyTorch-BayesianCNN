@@ -44,3 +44,25 @@ def get_beta(batch_idx, m, beta_type, epoch, num_epochs):
     else:
         beta = 0
     return beta
+
+if __name__ == "__main__":
+
+    dataset = 'cora'
+
+    from data import graph_data
+    import config_graph_bayesian as cfg
+    n_epochs = cfg.n_epochs
+    beta_type = cfg.beta_type
+
+    g, features, labels, in_feats, n_classes, n_edges, train_mask, val_mask, test_mask = graph_data.getDataset(dataset)
+
+    n_train_samples = len(labels[train_mask])
+
+    for epoch in range(n_epochs):
+
+
+        for i,_ in enumerate(labels):
+            b = get_beta(i-1, n_train_samples, beta_type, epoch, n_epochs)
+
+            if b != 0.1:
+                raise Exception(f"{b} {i}")

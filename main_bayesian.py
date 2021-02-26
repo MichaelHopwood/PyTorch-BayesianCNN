@@ -50,14 +50,30 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
         
         kl = kl / num_ens
         kl_list.append(kl.item())
+        # print('kl_list',kl_list)
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
+        # print("i-1",i-1)
         beta = metrics.get_beta(i-1, len(trainloader), beta_type, epoch, num_epochs)
+
+        # if beta != 0.1:
+        #     print("i-1",i-1)
+        #     print('beta',beta)
+        #     print("beta_type",beta_type)
+        #     print("epoch",epoch)
+        # print('log_outputs',log_outputs)
+        # print('labels',labels)
+        # print('kl',kl)
         loss = criterion(log_outputs, labels, kl, beta)
         loss.backward()
         optimizer.step()
 
         accs.append(metrics.acc(log_outputs.data, labels))
+        # print('accs',accs)
+
+        # if i > 4:
+            # import sys
+            # sys.exit()
         training_loss += loss.cpu().data.numpy()
     return training_loss/len(trainloader), np.mean(accs), np.mean(kl_list)
 

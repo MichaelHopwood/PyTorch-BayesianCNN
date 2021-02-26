@@ -68,6 +68,7 @@ class BBBLinear(ModuleWrapper):
 
         if self.training or sample:
             eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
+            # print(act_mu + act_std * eps)
             return act_mu + act_std * eps
         else:
             return act_mu
