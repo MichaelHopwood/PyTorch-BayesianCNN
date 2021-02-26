@@ -14,7 +14,7 @@ from data import graph_data
 import utils
 import metrics
 import config_graph_bayesian as cfg
-from models.BayesianModels.BayesianSGC import BBBSGC
+from models.BayesianModels.BayesianSGC import BayesianSGC
 
 # CUDA settings
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -28,17 +28,19 @@ def getModel(net_type,
                    norm=None,
                    bias=True,
                    allow_zero_in_degree=False,
-                   layer_type='lrt'):
+                   layer_type='lrt',
+                   activation_type=None):
 
     if (net_type == 'sgc'):
-        net =  BBBSGC(in_feats,
+        net =  BayesianSGC(in_feats,
                         n_classes,
                         k=k,
                         cached=cached,
                         bias=bias,
                         norm=norm,
                         allow_zero_in_degree=allow_zero_in_degree,
-                        layer_type=layer_type)
+                        layer_type=layer_type,
+                        activation_type=activation_type)
         print("net",net)
         return net
 
@@ -76,7 +78,8 @@ def run(dataset, net_type):
                     norm=None,
                     bias=True,
                     allow_zero_in_degree=False,
-                    layer_type=layer_type)
+                    layer_type=layer_type,
+                    activation_type=activation_type)
     net = net.to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/frequentist'
@@ -194,8 +197,8 @@ def run(dataset, net_type):
         
         # save model if validation loss has decreased
         if valid_loss <= valid_loss_min:
-            print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
-                valid_loss_min, valid_loss))
+            # print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
+                # valid_loss_min, valid_loss))
             torch.save(net.state_dict(), ckpt_name)
             valid_loss_min = valid_loss
 

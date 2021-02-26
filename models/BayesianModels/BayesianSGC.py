@@ -11,30 +11,73 @@ from metrics import calculate_kl as KL_DIV
 # from ..misc import ModuleWrapper
 import dgl.function as fn
 
-# class GraphModuleWrapper(nn.Module):
-#     """Wrapper for nn.Module with support for arbitrary flags and a universal forward pass"""
+class GraphModuleWrapper(nn.Module):
+    """Wrapper for nn.Module with support for arbitrary flags and a universal forward pass"""
 
-#     def __init__(self):
-#         super(GraphModuleWrapper, self).__init__()
+    def __init__(self):
+        super(GraphModuleWrapper, self).__init__()
 
-#     def set_flag(self, flag_name, value):
-#         setattr(self, flag_name, value)
-#         for m in self.children():
-#             if hasattr(m, 'set_flag'):
-#                 m.set_flag(flag_name, value)
+    def set_flag(self, flag_name, value):
+        setattr(self, flag_name, value)
+        for m in self.children():
+            if hasattr(m, 'set_flag'):
+                m.set_flag(flag_name, value)
 
-#     def forward(self, graph, feat):
-#         for module in self.children():
-#             x = module(graph, feat)
+    def forward(self, graph, feat):
+        for module in self.children():
+            # print(module)
+            try:
+                x = module(graph, feat)
+            except:
+                # passes through second
+                # print(x)
+                x = module(x[0])
 
-#         kl = 0.0
-#         for module in self.modules():
-#             if hasattr(module, 'kl_loss'):
-#                 kl = kl + module.kl_loss()
-#         print(x,kl)
-#         return x, kl
+        kl = 0.0
+        for module in self.modules():
+            if hasattr(module, 'kl_loss'):
+                kl = kl + module.kl_loss()
+        return x, kl
 
-class BBBSGC(nn.Module):
+class BayesianSGC(GraphModuleWrapper):
+    '''The architecture of LeNet with Bayesian Layers'''
+
+    def __init__(self, in_feats,
+                 out_feats,
+                 k=1,
+                 cached=False,
+                 bias=True,
+                 norm=None,
+                 allow_zero_in_degree=False,
+                 priors=None,
+                 layer_type='lrt',
+                 activation_type=None):
+        super(BayesianSGC, self).__init__()
+
+        self.layer_type = layer_type
+        self.priors = priors
+        
+        if activation_type==None:
+            self.act = None
+        elif activation_type=='softplus':
+            self.act = nn.Softplus
+        elif activation_type=='relu':
+            self.act = nn.ReLU
+        else:
+            raise ValueError("Only softplus or relu or None supported")
+
+        self.conv1 = sgc(in_feats,
+                        out_feats,
+                        k=k,
+                        cached=cached,
+                        bias=bias,
+                        norm=norm,
+                        allow_zero_in_degree=allow_zero_in_degree,
+                        layer_type=layer_type)
+        print('done')
+        self.act1 = self.act()
+
+class sgc(nn.Module):
     def __init__(self,
                  in_feats,
                  out_feats,
@@ -46,7 +89,7 @@ class BBBSGC(nn.Module):
                  priors=None,
                  layer_type='lrt'):
 
-        super(BBBSGC, self).__init__()
+        super(sgc, self).__init__()
         # self.fc = nn.Linear(in_feats, out_feats, bias=bias)
         self.in_feats = in_feats
         self.out_feats = out_feats
@@ -180,8 +223,8 @@ class BBBSGC(nn.Module):
 
                 if self.training or sample:
                     eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
-                    # print(act_mu + act_std * eps)
-                    return act_mu + act_std * eps, self.kl_loss()
+                    out = act_mu + act_std * eps
+                    return out, self.kl_loss()
                 else:
                     return act_mu, self.kl_loss()
                     
